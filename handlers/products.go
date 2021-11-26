@@ -1,3 +1,17 @@
+// Package classification of Product API
+//
+// Documentation for Product API
+//
+// Schemes: http
+// Basepath: /
+// Version: 1.0.0
+//
+// Consumes:
+// - aplication/json
+//
+// Produces:
+// - aplication/json
+// swagger:meta
 package handlers
 
 import (
@@ -14,10 +28,37 @@ type Products struct {
 	l *log.Logger
 }
 
+// A list of products returns in the responses
+// swagger:response productsResponses
+type productsResponseWrapper struct{
+	// All products in the system
+	// in: body
+	Body []data.Product
+}
+
+// swagger:parameters deleteProduct
+type productIDParameterWrapper struct {
+	// The id of the product to delete from the database
+	// in:path
+	// required:true
+	ID int `json:"id"`
+}
+
+// swagger: response noContent
+type productNoContent struct {
+
+}
+
 func NewProduct(l *log.Logger) *Products {
 	return &Products{l}
 }
 
+// swagger:route GET /products products listProducts
+// Returns a list of products
+// responses:
+//	200: productsResponses
+
+// GetProducts returns the product from the data base
 func (p *Products) GetProducts(rw http.ResponseWriter, r *http.Request) {
 	lp := data.GetProducts()
 	err := lp.ToJSON(rw)
@@ -27,6 +68,12 @@ func (p *Products) GetProducts(rw http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// swagger:route POST /products products product
+// Return a status 
+// responses :
+// 	200: productsResponses
+
+// AddProduct store data product to the data base
 func (p *Products) AddProducts(rw http.ResponseWriter, r *http.Request) {
 
 	p.l.Println("ADD/POST PRODUCT")
@@ -62,6 +109,34 @@ func (p *Products) UpdateProduct(rw http.ResponseWriter, r *http.Request) {
 	}
 
 	rw.WriteHeader(http.StatusAccepted)
+}
+
+// swagger:route DELETE /products/{id} products deleteProduct
+// Returns a list of products
+// responses: 
+//	200: noContent
+
+// DeleteProduct delete a product from the database 
+func(p *Products) DeleteProduct(rw http.ResponseWriter, r *http.Request){
+	// this will always convert because of the router
+	vars := mux.Vars(r)
+	id, _ := strconv.Atoi(vars["id"])
+
+	p.l.Println("Handle DELETE Product-->", id)
+
+	err := data.DeleteProduct(id)
+	if err == data.ErrProductNotFound {
+		http.Error(rw, "Product Not Found ", http.StatusNotFound)
+		return
+	}
+
+	if err != nil {
+		http.Error(rw, "Something wrong ", http.StatusInternalServerError)
+		return
+	}
+	
+	rw.Write([]byte("Success"))
+
 }
 
 // func(p *Products) GetProductByID (rw http.ResponseWriter, r *http.Request) {
